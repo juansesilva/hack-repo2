@@ -1,0 +1,38 @@
+name: Notify Release Notes
+
+on:
+  push:
+    tags:
+      - '*-production'  # Matches v5.13.12-production
+      - 'v*-prod'       # Alternative pattern if needed
+
+jobs:
+  trigger-release-notes:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger central release notes workflow
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.RELEASE_NOTES_PAT }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/juansesilva/central-repo/dispatches \
+            -d '{
+              "event_type": "release-ready",
+              "client_payload": {
+                "repo": "${{ github.repository }}",
+                "tag": "${{ github.ref_name }}",
+                "triggered_at": "${{ github.event.head_commit.timestamp }}"
+              }
+            }'
+          
+          echo "✅ Triggered release notes generation for tag: ${{ github.ref_name }}"
+
+      - name: Summary
+        run: |
+          echo "## Production Tag Detected! 🏷️" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Release notes workflow has been triggered in the central repository." >> $GITHUB_STEP_SUMMARY
